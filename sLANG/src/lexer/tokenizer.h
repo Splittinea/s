@@ -27,3 +27,9 @@ private :
 	char peek() const;
 	char advance();
 };
+
+// === RULES ===
+struct TokenRule {
+	const char* text;
+	TokenType type;
+};

@@ -1,9 +1,10 @@
 #include <stdexcept>
 #include <iostream>
 
-// CUSTOM LIBS
+// === CUSTOM LIBS ===
 #include "parser.h"
 #include "core/memory.h"
+#include "lexer/token_rules.h"
 
 // =======
 // Helpers
@@ -23,96 +24,93 @@ Token Parser::advance() {
 // =============
 Node* Parser::parseExpression() {
     Token t = peek();
-    if (t.type == TokenType::Number) {
-        advance();
-        NumberNode* n = new NumberNode();
-        n->value = std::stod(t.value);
-        return n;
-    }
-    else if (t.type == TokenType::String) {
-        advance();
-        StringNode* s = new StringNode();
-        s->value = t.value;
-        return s;
-    }
-    else if (t.type == TokenType::Identifier) {
-        advance();
-        return new IdentifierNode(t.value);
-    }
-    else {
-        throw std::runtime_error("[RUNTIME - RED FLAG] Unsupported Expression");
+
+    switch (t.type) {
+        case TokenType::Number: {
+            advance();
+            NumberNode* n = new NumberNode();
+            n->value = std::stod(t.value);
+            return n;
+        }
+        case TokenType::String: {
+            advance();
+            StringNode* s = new StringNode();
+            s->value = t.value;
+            return s;
+        }
+        case TokenType::Identifier: {
+            advance();
+            return new IdentifierNode{ t.value };
+        }
+        default:
+            throw std::runtime_error("[RUNTIME - RED FLAG] Unsupported expression: " + t.value);
     }
 }
 
+// -----------------
+// Statements
+// -----------------
 Node* Parser::parseStatement() {
     Token t = peek();
 
-    // ============
-    // print("str")
-    // ============
-
+    // --- PRINT ---
     if (t.type == TokenType::Keyword && t.value == "print") {
         advance();
 
         Token openParen = advance();
-        if (openParen.value != "(")
+
+        if (!(openParen.type == TokenType::Operator && openParen.value == "("))
             throw std::runtime_error("[RED FLAG] Expected '(' after print");
 
         Node* expr = parseExpression();
 
         Token closeParen = advance();
-        if (closeParen.value != ")")
+        if (!(closeParen.type == TokenType::Operator && closeParen.value == ")"))
             throw std::runtime_error("[RED FLAG] Expected ')' after print argument");
 
         return new PrintNode(expr);
     }
 
-    // =========
-    // VARIABLES
-    // => NUM
-    if (t.type == TokenType::Keyword && t.value == "num") {
-        advance();
-        Token varName = advance();
-        if (varName.type != TokenType::Identifier) 
-            throw std::runtime_error("[RED FLAG] Expected variable name after identifier 'num'");
-        return new DeclNode(varName.value, Variable::NUM);
-    }
+    // --- DECLARATION ---
+    if (t.type == TokenType::Keyword && (t.value == "num" || t.value == "str")) {
+        advance(); // consume keyword
 
-    // => STR
-    if (t.type == TokenType::Keyword && t.value == "str") {
-        advance();
         Token varName = advance();
         if (varName.type != TokenType::Identifier)
-            throw std::runtime_error("[RED FLAG] Expected variable name after 'str'");
-        return new DeclNode(varName.value, Variable::STR);
+            throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
+
+        Variable::Type type = (t.value == "num") ? Variable::NUM : Variable::STR;
+        return new DeclNode(varName.value, type);
     }
-    
-    // => Assignment
+
+    // --- ASSIGNMENT ---
     if (t.type == TokenType::Identifier) {
         Token varName = advance();
-        Token eq = advance();
-        if (eq.type == TokenType::Operator && eq.value == "=") {
+        Token op = advance();
+
+        // On vérifie que l'opérateur fait partie de TOKEN_RULES
+        if (op.type == TokenType::Operator && op.value == "=") {
             Node* expr = parseExpression();
             return new AssignNode(varName.value, expr);
+        } else {
+            throw std::runtime_error("[RED FLAG] Expected '=' in assignment");
         }
     }
-    // =========
-    // ==/////==
 
-    // Other instructions
     return nullptr;
 }
 
+// -----------------
+// Program
+// -----------------
 std::vector<Node*> Parser::parseProgram() {
     std::vector<Node*> program;
 
     while (peek().type != TokenType::EndOfFile) {
         Node* stmt = parseStatement();
-        if (stmt) {
-            program.push_back(stmt);
-        }
+        if (stmt) program.push_back(stmt);
 
-        // Checks for ";" char
+        // --- Check for semicolon ---
         Token sep = peek();
         if (sep.type == TokenType::Semicolon) {
             advance();
