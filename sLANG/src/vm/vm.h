@@ -1,16 +1,24 @@
 #pragma once
-#include "ast/ast.h"
-#include <variant>
-#include <string>
-#include <iostream>
 
-using Value = std::variant<double, std::string>;
+#include <vector>
+
+// === CUSTOM LIBRARIES ===
+#include "ast/ast.h"
+#include "core/memory.h"
 
 class VM {
-public:
-    VM() = default;
-    void execute(Node* node);
-
 private:
-    void executePrint(PrintNode* node);
+    Memory& memory; // Memory instance reference
+
+public:
+    VM(Memory& mem) : memory(mem) {}
+
+    void execute(Node* node);
+    
+    // === IMPLEMENTED FUNCTIONS ===
+    void sPrint(PrintNode* node); // <= print(str)
+    // ==/////////////////////////==
+
+    void run(const std::vector<Node*>& program);
+
 };

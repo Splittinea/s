@@ -1,6 +1,9 @@
-#include "parser.h"
 #include <stdexcept>
 #include <iostream>
+
+// CUSTOM LIBS
+#include "parser.h"
+#include "core/memory.h"
 
 // =======
 // Helpers
@@ -32,6 +35,10 @@ Node* Parser::parseExpression() {
         s->value = t.value;
         return s;
     }
+    else if (t.type == TokenType::Identifier) {
+        advance();
+        return new IdentifierNode(t.value);
+    }
     else {
         throw std::runtime_error("[RUNTIME - RED FLAG] Unsupported Expression");
     }
@@ -60,6 +67,38 @@ Node* Parser::parseStatement() {
         return new PrintNode(expr);
     }
 
+    // =========
+    // VARIABLES
+    // => NUM
+    if (t.type == TokenType::Keyword && t.value == "num") {
+        advance();
+        Token varName = advance();
+        if (varName.type != TokenType::Identifier) 
+            throw std::runtime_error("[RED FLAG] Expected variable name after identifier 'num'");
+        return new DeclNode(varName.value, Variable::NUM);
+    }
+
+    // => STR
+    if (t.type == TokenType::Keyword && t.value == "str") {
+        advance();
+        Token varName = advance();
+        if (varName.type != TokenType::Identifier)
+            throw std::runtime_error("[RED FLAG] Expected variable name after 'str'");
+        return new DeclNode(varName.value, Variable::STR);
+    }
+    
+    // => Assignment
+    if (t.type == TokenType::Identifier) {
+        Token varName = advance();
+        Token eq = advance();
+        if (eq.type == TokenType::Operator && eq.value == "=") {
+            Node* expr = parseExpression();
+            return new AssignNode(varName.value, expr);
+        }
+    }
+    // =========
+    // ==/////==
+
     // Other instructions
     return nullptr;
 }
@@ -75,8 +114,10 @@ std::vector<Node*> Parser::parseProgram() {
 
         // Checks for ";" char
         Token sep = peek();
-        if (sep.type == TokenType::Operator && sep.value == ";") {
+        if (sep.type == TokenType::Semicolon) {
             advance();
+        } else {
+            throw std::runtime_error("[RED FLAG] ';' expected after statement");
         }
     }
 

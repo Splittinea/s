@@ -24,7 +24,12 @@ std::vector<Token> Tokenizer::tokenize() {
             while (m_pos < m_source.size() && std::isalnum(m_source[m_pos])) {
                 word += m_source[m_pos++];
             }
-            TokenType type = (word == "print") ? TokenType::Keyword : TokenType::Identifier;
+
+            TokenType type = TokenType::Identifier;
+            if (word == "print" || word == "num" || word == "str") {
+                type = TokenType::Keyword;
+            }
+
             tokens.push_back(Token{ type, word, m_line, m_col });
             continue;
         }
@@ -50,6 +55,33 @@ std::vector<Token> Tokenizer::tokenize() {
             continue;
         }
 
+        if (c == ';') {
+            tokens.push_back(Token{ TokenType::Semicolon, ";", m_line, m_col++ });
+            m_pos++;
+            continue;
+        }
+
+        if (c == '=' || c == '+' || c == '-' || c == '*' || c == '/') {
+            tokens.push_back(Token{ TokenType::Operator, std::string(1, c), m_line, m_col++ });
+            m_pos++;
+            continue;
+        }
+
+        if (c == '=' || c == '!' || c == '<' || c == '>') {
+            std::string op;
+            op += c;
+            m_pos++;
+
+            // check for 2-char operator
+            if (m_pos < m_source.size() && m_source[m_pos] == '=') {
+                op += '=';
+                m_pos++;
+            }
+
+            tokens.push_back(Token{ TokenType::Operator, op, m_line, m_col++ });
+            continue;
+        }
+        
         m_pos++;
     }
 

@@ -3,7 +3,7 @@
 #include <vector>
 
 enum class TokenType {
-	Identifier, Number, String, Keyword, Operator, EndOfFile
+	Identifier, Number, String, Keyword, Operator, Semicolon, EndOfFile
 };
 
 struct Token {

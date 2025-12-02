@@ -1,42 +1,61 @@
 #include <iostream>
+#include <vector>
 #include <string>
 
-// === CUSTOM INCLUDES ===
-#include "lexer/tokenizer.h"
+// CUSTOM LIBS
+#include "core/memory.h"
 #include "parser/parser.h"
+#include "ast/ast.h"
 #include "vm/vm.h"
 
-using namespace std;
-
 int main() {
-    // ===================
-    // S LANGUAGE SCRIPT
-    // ===================
-    string code = R"(
-        print("Hello");
-        print("World");
-        print("Heresie");print("Oui");
-    )";
-    // ===================
-    // ==///////////////==
-    // ===================
+    // ===== S Language Script =====
+    std::string code = R"(
+        print("Hello World");
 
-    // =================
-    // EXECUTION CHAIN
-    // =================
-    Tokenizer tokenizer(code);
-    auto tokens = tokenizer.tokenize();
+        num x;
+        x = 10;
+        print(x);
 
-    Parser parser(tokens);
-    auto program = parser.parseProgram();
+        num y;
+        y = 42.5;
+        print(y);
 
-    VM vm;
-    for (Node* stmt : program) {
-        vm.execute(stmt);
+        str prenom;
+        prenom = "Ugo";
+        print(prenom);
+
+        str message;
+        message = "Bienvenue dans Splittix!";
+        print(message);
+
+        print("Test1"); print("Test2");
+        )";
+    // =============================
+    
+    // === EXECUTION CHAIN ===
+    try {
+        // ===== Tokenization =====
+        Tokenizer tokenizer(code);
+        std::vector<Token> tokens = tokenizer.tokenize();
+
+        // ===== Parsing =====
+        Parser parser(tokens);
+        std::vector<Node*> program = parser.parseProgram();
+
+        // ===== Memory & VM =====
+        Memory memory;
+        VM vm(memory);
+        vm.run(program);
+
+        // ===== Cleanup =====
+        for (Node* node : program) {
+            delete node;
+        }
     }
-    // =================
-    // ==/////////////==
-    // =================
+    catch (const std::exception& e) {
+        std::cerr << "[EXCEPTION] " << e.what() << std::endl;
+    }
 
     return 0;
 }
