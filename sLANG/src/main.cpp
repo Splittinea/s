@@ -6,11 +6,13 @@
 #include "parser/parser.h"
 #include "vm/vm.h"
 
+using namespace std;
+
 int main() {
     // ===================
     // S LANGUAGE SCRIPT
     // ===================
-    std::string code = R"(
+    string code = R"(
         print("Hello");
         print("World");
         print("Heresie");print("Oui");
@@ -19,6 +21,9 @@ int main() {
     // ==///////////////==
     // ===================
 
+    // =================
+    // EXECUTION CHAIN
+    // =================
     Tokenizer tokenizer(code);
     auto tokens = tokenizer.tokenize();
 
@@ -29,6 +34,9 @@ int main() {
     for (Node* stmt : program) {
         vm.execute(stmt);
     }
+    // =================
+    // ==/////////////==
+    // =================
 
     return 0;
 }

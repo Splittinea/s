@@ -1,5 +1,5 @@
 #include "vm.h"
-#include "ast.h"
+#include "ast/ast.h"
 
 void VM::execute(Node* node) {
     if (auto printNode = dynamic_cast<PrintNode*>(node)) {

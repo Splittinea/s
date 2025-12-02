@@ -1,6 +1,6 @@
 #pragma once
-#include "tokenizer.h"
-#include "ast.h"
+#include "lexer/tokenizer.h"
+#include "ast/ast.h"
 #include <vector>
 
 class Parser {
