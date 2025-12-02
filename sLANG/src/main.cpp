@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
-#include "tokenizer.h"
-#include "parser.h"
-#include "vm.h"
+
+// === CUSTOM INCLUDES ===
+#include "lexer/tokenizer.h"
+#include "parser/parser.h"
+#include "vm/vm.h"
 
 int main() {
     // ===================
