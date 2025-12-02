@@ -52,7 +52,7 @@ Node* StatementParser::parseStatement() {
         if (varName.type != TokenType::Identifier)
             throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
 
-        if (typeKw == "num") return new DeclNode(varName.value, setType);
+        if (typeKw == "num") return new DeclNode(varName.value, Variable::NUM, setType);
         else return new DeclNode(varName.value, Variable::STR);
     }
 

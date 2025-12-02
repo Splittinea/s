@@ -5,6 +5,7 @@
 #include "ast/ast.h"
 #include "core/memory.h"
 #include "core/libs/builtins.h"
+#include "core/value.h"
 
 void VM::execute(Node* node) {
     if (auto printNode = dynamic_cast<PrintNode*>(node)) {
@@ -12,10 +13,10 @@ void VM::execute(Node* node) {
     }
     else if (auto declNode = dynamic_cast<DeclNode*>(node)) {
         if (declNode->type == Variable::NUM) {
-            if (declNode->setName.empty() || declNode->setName == "R") {
+            if (!declNode->set.has_value() || declNode->set.value() == Variable::R) {
                 memory.declareNum(declNode->name, Variable::R);
             }
-            else if (declNode->setName == "Z") {
+            else if (declNode->set.value() == Variable::Z) {
                 memory.declareInt(declNode->name);
             }
             /*else if (declNode->setName == "N") {
@@ -28,7 +29,7 @@ void VM::execute(Node* node) {
                 memory.declareComplex(declNode->name);
             }*/
             else {
-                std::cerr << "[VM - RED FLAG] Unknown number set: " << declNode->setName << "\n";
+                std::cerr << "[VM - RED FLAG] Unknown number set\n";
             }
         }
         else {
@@ -37,12 +38,14 @@ void VM::execute(Node* node) {
         }
     }
     else if (auto assignNode = dynamic_cast<AssignNode*>(node)) {
-        if (auto numNode = dynamic_cast<NumberNode*>(assignNode->expr))
-            memory.assignNum(assignNode->name, numNode->value);
-        else if (auto strNode = dynamic_cast<StringNode*>(assignNode->expr))
-            memory.assignStr(assignNode->name, strNode->value);
+        Value v = eval(assignNode->expr);
+
+        if (v.isNumber())
+            memory.assignNum(assignNode->name, v.asNumber());
+        else if (v.isString())
+            memory.assignStr(assignNode->name, v.asString());
         else
-            std::cerr << "[VM - RED FLAG] Unknown expression type in assignment\n";
+            std::cerr << "[VM - RED FLAG] Cannot assign this value type\n";
     }
     else if (auto builtinNode = dynamic_cast<BuiltinNode*>(node)) {
         if (builtinNode->name == "print") {
@@ -63,6 +66,40 @@ void VM::execute(Node* node) {
     else {
         std::cerr << "[VM - RED FLAG] Unsupported Instruction\n";
     }
+}
+
+Value VM::eval(Node* node) {
+    if (auto num = dynamic_cast<NumberNode*>(node)) {
+        return Value(num->value);
+    }
+    if (auto str = dynamic_cast<StringNode*>(node)) {
+        return Value(str->value);
+    }
+    if (auto bin = dynamic_cast<BinaryOpNode*>(node)) {
+        Value left = eval(bin->left);
+        Value right = eval(bin->right);
+
+        if (bin->op == "+") return Value(left.asNumber() + right.asNumber());
+        if (bin->op == "-") return Value(left.asNumber() - right.asNumber());
+        if (bin->op == "*") return Value(left.asNumber() * right.asNumber());
+        if (bin->op == "/") return Value(left.asNumber() / right.asNumber());
+
+        std::cerr << "[VM - RED FLAG] Unknown binary operator: " << bin->op << "\n";
+    }
+    if (auto un = dynamic_cast<UnaryOpNode*>(node)) {
+        Value v = eval(un->expr);
+
+        if (un->op == "-")
+            return Value(-v.asNumber());
+
+        if (un->op == "+")
+            return v;
+
+        std::cerr << "[VM - RED FLAG] Unknown unary operator: " << un->op << "\n";
+    }
+
+    std::cerr << "[VM - RED FLAG] Unsupported expression in eval\n";
+    return Value(); // valeur vide
 }
 
 void VM::run(const std::vector<Node*>& program) {

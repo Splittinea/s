@@ -1,25 +1,27 @@
 #pragma once
-#include "lexer/tokenizer.h"
-#include "ast/ast.h"
 #include <vector>
+#include <optional>
+#include <string>
+#include "ast/ast.h"
+#include "lexer/tokenizer.h"
 
 class Parser {
 public:
-    explicit Parser(const std::vector<Token>& tokens)
-        : m_tokens(tokens) {
-    }
+    Parser(const std::vector<Token>& tokens) : m_tokens(tokens) {}
 
-    // Parses the entire program and returns all the instructions
     std::vector<Node*> parseProgram();
+    Node* parseExpression();
+    Node* parseStatement();
 
-private:
-    size_t m_pos = 0;
-    std::vector<Token> m_tokens;
-
-    // Helpers
     Token peek();
     Token advance();
 
-    Node* parseStatement();
-    Node* parseExpression();
+private:
+    std::vector<Token> m_tokens;
+    size_t m_pos = 0;
+
+    Node* parseAddSub();
+    Node* parseMulDiv();
+    Node* parseUnary();
+    Node* parsePrimary();
 };

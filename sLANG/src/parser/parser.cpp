@@ -23,29 +23,81 @@ Token Parser::advance() {
 // Parser Engine
 // =============
 Node* Parser::parseExpression() {
-    Token t = peek();
-
-    switch (t.type) {
-        case TokenType::Number: {
-            advance();
-            NumberNode* n = new NumberNode();
-            n->value = std::stod(t.value);
-            return n;
-        }
-        case TokenType::String: {
-            advance();
-            StringNode* s = new StringNode();
-            s->value = t.value;
-            return s;
-        }
-        case TokenType::Identifier: {
-            advance();
-            return new IdentifierNode{ t.value };
-        }
-        default:
-            throw std::runtime_error("[RUNTIME - RED FLAG] Unsupported expression: " + t.value);
-    }
+    return parseAddSub();
 }
+
+Node* Parser::parseAddSub() {
+    Node* left = parseMulDiv();
+
+    while (true) {
+        Token t = peek();
+        if (t.type == TokenType::Operator && (t.value == "+" || t.value == "-")) {
+            advance();
+            Node* right = parseMulDiv();
+            left = new BinaryOpNode{t.value, left, right};
+        } else {
+            break;
+        }
+    }
+
+    return left;
+}
+
+Node* Parser::parseMulDiv() {
+    Node* left = parseUnary();
+
+    while (true) {
+        Token t = peek();
+        if (t.type == TokenType::Operator && (t.value == "*" || t.value == "/")) {
+            advance();
+            Node* right = parseUnary();
+            left = new BinaryOpNode{t.value, left, right};
+        } else {
+            break;
+        }
+    }
+
+    return left;
+}
+
+Node* Parser::parseUnary() {
+    Token t = peek();
+    if (t.type == TokenType::Operator && (t.value == "+" || t.value == "-")) {
+        advance();
+        Node* expr = parseUnary();
+        return new UnaryOpNode{t.value, expr};
+    }
+    return parsePrimary();
+}
+
+Node* Parser::parsePrimary() {
+    Token t = peek();
+    switch (t.type) {
+        case TokenType::Number:
+            advance();
+            return new NumberNode{std::stod(t.value)};
+        case TokenType::String:
+            advance();
+            return new StringNode{t.value};
+        case TokenType::Identifier:
+            advance();
+            return new IdentifierNode{t.value};
+        case TokenType::Operator:
+            if (t.value == "(") {
+                advance();
+                Node* expr = parseExpression();
+                if (peek().value != ")")
+                    throw std::runtime_error("Expected ')'");
+                advance();
+                return expr;
+            }
+            break;
+        default:
+            throw std::runtime_error("[PARSER - RED FLAG] Unsupported expression: " + t.value);
+    }
+    throw std::runtime_error("[PARSER - RED FLAG] Invalid primary expression");
+}
+
 
 // -----------------
 // Statements
@@ -55,34 +107,30 @@ Node* Parser::parseStatement() {
 
     // === Déclaration de variables ===
     if (t.type == TokenType::Keyword && (t.value == "num" || t.value == "str")) {
-        advance(); // consomme "num" ou "str"
+        std::string typeKw = t.value;
+        advance();
 
-        Variable::Type type = (t.value == "num") ? Variable::NUM : Variable::STR;
-        std::string setName = ""; // par défaut vide pour str ou réel
+        std::optional<Variable::Set> setType = std::nullopt;
 
-        // --- Si on a des parenthèses pour indiquer l'ensemble ---
-        if (peek().value == "(") {
-            advance(); // consomme '('
-            Token setToken = advance(); // doit être Identifier (N, Z, Q, R, C)
-            if (setToken.type != TokenType::Identifier) {
-                throw std::runtime_error("[RED FLAG] Expected set name inside parentheses");
-            }
-            setName = setToken.value;
+        Token next = peek();
+        if (next.value == "(") {
+            advance();
+            Token setToken = advance();
+            if (setToken.value == "Z") setType = Variable::Z;
+            else if (setToken.value == "R") setType = Variable::R;
+            else throw std::runtime_error("[RED FLAG] Unknown set type: " + setToken.value);
 
-            Token closeParen = advance();
-            if (closeParen.value != ")") {
-                throw std::runtime_error("[RED FLAG] Expected ')' after set name");
-            }
+            Token closePar = advance();
+            if (closePar.value != ")")
+                throw std::runtime_error("[RED FLAG] Expected ')' after set type");
         }
 
-        // --- Récupère le nom de la variable ---
         Token varName = advance();
-        if (varName.type != TokenType::Identifier) {
+        if (varName.type != TokenType::Identifier)
             throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
-        }
 
-        // Ici tu peux créer une DeclNode améliorée qui stocke le set
-        return new DeclNode(varName.value, type, setName);
+        if (typeKw == "num") return new DeclNode(varName.value, Variable::NUM, setType.value_or(Variable::R));
+        else return new DeclNode(varName.value, Variable::STR);
     }
 
     // === Builtins / print / input ===

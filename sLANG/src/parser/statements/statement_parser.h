@@ -1,7 +1,7 @@
 #pragma once
 #include "ast/ast.h"
 #include "lexer/tokenizer.h"
-#include "expressions/expression_parser.h"
+#include "../expressions/expression_parser.h"
 
 class StatementParser {
 public:

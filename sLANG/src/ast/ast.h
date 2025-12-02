@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <optional>
 
 // === CUSTOM LIBS ===
 #include "core/memory.h"
@@ -11,10 +12,16 @@ struct Node {
 
 struct NumberNode : Node {
 	double value;
+
+	NumberNode() : value(0.0) {}
+    NumberNode(double v) : value(v) {}
 };
 
 struct StringNode : Node {
 	std::string value;
+
+	StringNode() : value("") {}
+    StringNode(const std::string& v) : value(v) {}
 };
 
 struct IdentifierNode : Node {
@@ -28,16 +35,35 @@ struct BuiltinNode : Node {
 
 	BuiltinNode(const std::string& n, const std::vector<Node*>& a) : name(n), args(a) {}
 };
+
+struct BinaryOpNode : Node {
+    Node* left;
+    std::string op;
+    Node* right;
+
+    BinaryOpNode(const std::string& op, Node* left, Node* right)
+    : op(op), left(left), right(right) {}
+};
+
+struct UnaryOpNode : Node {
+    std::string op;
+    Node* expr;
+    UnaryOpNode(const std::string& o, Node* e) : op(o), expr(e) {}
+    ~UnaryOpNode() { delete expr; }
+};
 // ================
 
 // === VARIABLES ===
 struct DeclNode : Node {
-	std::string name;
-	Variable::Type type;
-	std::string setName;
+    std::string name;
+    Variable::Type type;
+    std::optional<Variable::Set> set;
 
-	DeclNode(const std::string& n, Variable::Type t, const std::string& s = "")
-        : name(n), type(t), setName(s) {}
+    DeclNode(const std::string& n, Variable::Type t, Variable::Set s)
+        : name(n), type(t), set(s) {}
+
+    DeclNode(const std::string& n, Variable::Type t)
+        : name(n), type(t), set(std::nullopt) {}
 };
 
 struct AssignNode : Node {

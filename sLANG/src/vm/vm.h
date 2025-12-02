@@ -5,6 +5,7 @@
 // === CUSTOM LIBRARIES ===
 #include "ast/ast.h"
 #include "core/memory.h"
+#include "core/value.h"
 
 class VM {
 private:
@@ -15,5 +16,6 @@ public:
 
     void execute(Node* node);
     void run(const std::vector<Node*>& program);
+    Value eval(Node* node);
 
 };
