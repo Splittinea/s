@@ -53,42 +53,48 @@ Node* Parser::parseExpression() {
 Node* Parser::parseStatement() {
     Token t = peek();
 
-    // --- PRINT ---
-    if (t.type == TokenType::Keyword && t.value == "print") {
-        advance();
+    // ===== BUILTINS =====
+    if (t.type == TokenType::Keyword) {
+        std::string kw = t.value;
 
-        Token openParen = advance();
+        if (kw == "print" || kw == "input") {
+            advance(); // consume keyword
 
-        if (!(openParen.type == TokenType::Operator && openParen.value == "("))
-            throw std::runtime_error("[RED FLAG] Expected '(' after print");
+            Token open = advance();
+            if (open.value != "(")
+                throw std::runtime_error("[RED FLAG] Expected '(' after " + kw);
 
-        Node* expr = parseExpression();
+            std::vector<Node*> args;
+            while (peek().value != ")") {
+                args.push_back(parseExpression());
+                if (peek().value == ",") advance(); // skip comma
+            }
 
-        Token closeParen = advance();
-        if (!(closeParen.type == TokenType::Operator && closeParen.value == ")"))
-            throw std::runtime_error("[RED FLAG] Expected ')' after print argument");
+            Token close = advance();
+            if (close.value != ")")
+                throw std::runtime_error("[RED FLAG] Expected ')' after " + kw + " arguments");
 
-        return new PrintNode(expr);
+            return new BuiltinNode(kw, args);
+        }
+
+        // ===== DECLARATIONS =====
+        if (kw == "num" || kw == "str") {
+            advance(); // consume keyword
+
+            Token varName = advance();
+            if (varName.type != TokenType::Identifier)
+                throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
+
+            Variable::Type type = (kw == "num") ? Variable::NUM : Variable::STR;
+            return new DeclNode(varName.value, type);
+        }
     }
 
-    // --- DECLARATION ---
-    if (t.type == TokenType::Keyword && (t.value == "num" || t.value == "str")) {
-        advance(); // consume keyword
-
-        Token varName = advance();
-        if (varName.type != TokenType::Identifier)
-            throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
-
-        Variable::Type type = (t.value == "num") ? Variable::NUM : Variable::STR;
-        return new DeclNode(varName.value, type);
-    }
-
-    // --- ASSIGNMENT ---
+    // ===== ASSIGNMENT =====
     if (t.type == TokenType::Identifier) {
         Token varName = advance();
         Token op = advance();
 
-        // On vérifie que l'opérateur fait partie de TOKEN_RULES
         if (op.type == TokenType::Operator && op.value == "=") {
             Node* expr = parseExpression();
             return new AssignNode(varName.value, expr);
@@ -97,7 +103,7 @@ Node* Parser::parseStatement() {
         }
     }
 
-    return nullptr;
+    throw std::runtime_error("[RED FLAG] Unexpected token in statement: '" + t.value + "'");
 }
 
 // -----------------

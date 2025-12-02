@@ -4,6 +4,7 @@
 // === CUSTOM LIBS ===
 #include "core/memory.h"
 
+// === GENERAL NODES ===
 struct Node {
 	virtual ~Node() = default;
 };
@@ -20,6 +21,14 @@ struct IdentifierNode : Node {
 	std::string name;
 	IdentifierNode(const std::string& n) : name(n) {}
 };
+
+struct BuiltinNode : Node {
+	std::string name;
+	std::vector<Node*> args;
+
+	BuiltinNode(const std::string& n, const std::vector<Node*>& a) : name(n), args(a) {}
+};
+// ================
 
 // === VARIABLES ===
 struct DeclNode : Node {
