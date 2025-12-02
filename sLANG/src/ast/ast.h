@@ -34,8 +34,10 @@ struct BuiltinNode : Node {
 struct DeclNode : Node {
 	std::string name;
 	Variable::Type type;
+	std::string setName;
 
-	DeclNode(const std::string& n, Variable::Type t) : name(n), type(t) {}
+	DeclNode(const std::string& n, Variable::Type t, const std::string& s = "")
+        : name(n), type(t), setName(s) {}
 };
 
 struct AssignNode : Node {

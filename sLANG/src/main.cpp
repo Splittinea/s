@@ -11,26 +11,15 @@
 int main() {
     // ===== S Language Script =====
     std::string code = R"(
-        print("Hello World");
+        num(R) a;
+        num(Z) b;
 
-        num x;
-        x = 10;
-        print(x);
+        a = 3.14;
+        b = -7;
 
-        num y;
-        y = 42.5;
-        print(y);
-
-        str prenom;
-        prenom = "Ugo";
-        print(prenom);
-
-        str message;
-        message = "Bienvenue dans Splittix!";
-        print(message);
-
-        print("Test1"); print("Test2");
-        )";
+        print(a);
+        print(b);
+    )";
     // =============================
     
     // === EXECUTION CHAIN ===

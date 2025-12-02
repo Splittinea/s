@@ -11,27 +11,36 @@ void VM::execute(Node* node) {
         Builtins::print(printNode->expr, memory);
     }
     else if (auto declNode = dynamic_cast<DeclNode*>(node)) {
-        if (declNode->type == Variable::NUM)
-            memory.declareNum(declNode->name);
-        else
+        if (declNode->type == Variable::NUM) {
+            if (declNode->setName.empty() || declNode->setName == "R") {
+                memory.declareNum(declNode->name, Variable::R);
+            }
+            else if (declNode->setName == "Z") {
+                memory.declareInt(declNode->name);
+            }
+            /*else if (declNode->setName == "N") {
+                memory.declareNat(declNode->name);
+            }
+            else if (declNode->setName == "Q") {
+                memory.declareRational(declNode->name);
+            }
+            else if (declNode->setName == "C") {
+                memory.declareComplex(declNode->name);
+            }*/
+            else {
+                std::cerr << "[VM - RED FLAG] Unknown number set: " << declNode->setName << "\n";
+            }
+        }
+        else {
+            // Pour les chaînes de caractères
             memory.declareStr(declNode->name);
+        }
     }
     else if (auto assignNode = dynamic_cast<AssignNode*>(node)) {
         if (auto numNode = dynamic_cast<NumberNode*>(assignNode->expr))
             memory.assignNum(assignNode->name, numNode->value);
         else if (auto strNode = dynamic_cast<StringNode*>(assignNode->expr))
             memory.assignStr(assignNode->name, strNode->value);
-        else if (auto idNode = dynamic_cast<IdentifierNode*>(assignNode->expr)) {
-            try {
-                Variable v = memory.get(idNode->name);
-                if (v.type == Variable::NUM)
-                    memory.assignNum(assignNode->name, v.numVal);
-                else
-                    memory.assignStr(assignNode->name, v.strVal);
-            } catch (std::exception& e) {
-                std::cerr << e.what() << std::endl;
-            }
-        }
         else
             std::cerr << "[VM - RED FLAG] Unknown expression type in assignment\n";
     }
@@ -41,18 +50,13 @@ void VM::execute(Node* node) {
                 Builtins::print(arg, memory);
         }
         else if (builtinNode->name == "input") {
-            if (!builtinNode->args.empty()) {
-                Node* promptNode = builtinNode->args[0];
-                std::string prompt;
-                if (auto s = dynamic_cast<StringNode*>(promptNode))
-                    prompt = s->value;
-                Node* result = Builtins::input(prompt);
-                // Optional : Store value in a variable
+            if (builtinNode->args.size() > 0) {
+                Node* result = Builtins::input(dynamic_cast<StringNode*>(builtinNode->args[0])->value);
+                // Optionnel : stocker le résultat si assigné
             } else {
                 Builtins::input("");
             }
-        }
-        else {
+        } else {
             std::cerr << "[VM - RED FLAG] Unknown builtin function: " << builtinNode->name << "\n";
         }
     }

@@ -3,8 +3,12 @@
 using namespace std;
 
 // Functions
-void Memory::declareNum(const string& name) {
-    variables[name] = Variable(0.0);
+void Memory::declareNum(const string& name, Variable::Set set = Variable::R) {
+    variables[name] = Variable(0.0, set);
+}
+
+void Memory::declareInt(const std::string& name) {
+    variables[name] = Variable(0, Variable::Z);
 }
 
 void Memory::declareStr(const string& name) { variables[name] = Variable(""); }

@@ -53,44 +53,61 @@ Node* Parser::parseExpression() {
 Node* Parser::parseStatement() {
     Token t = peek();
 
-    // ===== BUILTINS =====
-    if (t.type == TokenType::Keyword) {
-        std::string kw = t.value;
+    // === Déclaration de variables ===
+    if (t.type == TokenType::Keyword && (t.value == "num" || t.value == "str")) {
+        advance(); // consomme "num" ou "str"
 
-        if (kw == "print" || kw == "input") {
-            advance(); // consume keyword
+        Variable::Type type = (t.value == "num") ? Variable::NUM : Variable::STR;
+        std::string setName = ""; // par défaut vide pour str ou réel
 
-            Token open = advance();
-            if (open.value != "(")
-                throw std::runtime_error("[RED FLAG] Expected '(' after " + kw);
-
-            std::vector<Node*> args;
-            while (peek().value != ")") {
-                args.push_back(parseExpression());
-                if (peek().value == ",") advance(); // skip comma
+        // --- Si on a des parenthèses pour indiquer l'ensemble ---
+        if (peek().value == "(") {
+            advance(); // consomme '('
+            Token setToken = advance(); // doit être Identifier (N, Z, Q, R, C)
+            if (setToken.type != TokenType::Identifier) {
+                throw std::runtime_error("[RED FLAG] Expected set name inside parentheses");
             }
+            setName = setToken.value;
 
-            Token close = advance();
-            if (close.value != ")")
-                throw std::runtime_error("[RED FLAG] Expected ')' after " + kw + " arguments");
-
-            return new BuiltinNode(kw, args);
+            Token closeParen = advance();
+            if (closeParen.value != ")") {
+                throw std::runtime_error("[RED FLAG] Expected ')' after set name");
+            }
         }
 
-        // ===== DECLARATIONS =====
-        if (kw == "num" || kw == "str") {
-            advance(); // consume keyword
-
-            Token varName = advance();
-            if (varName.type != TokenType::Identifier)
-                throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
-
-            Variable::Type type = (kw == "num") ? Variable::NUM : Variable::STR;
-            return new DeclNode(varName.value, type);
+        // --- Récupère le nom de la variable ---
+        Token varName = advance();
+        if (varName.type != TokenType::Identifier) {
+            throw std::runtime_error("[RED FLAG] Expected variable name after declaration");
         }
+
+        // Ici tu peux créer une DeclNode améliorée qui stocke le set
+        return new DeclNode(varName.value, type, setName);
     }
 
-    // ===== ASSIGNMENT =====
+    // === Builtins / print / input ===
+    if (t.type == TokenType::Keyword && (t.value == "print" || t.value == "input")) {
+        std::string kw = t.value;
+        advance();
+
+        Token open = advance();
+        if (open.value != "(")
+            throw std::runtime_error("[RED FLAG] Expected '(' after " + kw);
+
+        std::vector<Node*> args;
+        while (peek().value != ")") {
+            args.push_back(parseExpression());
+            if (peek().value == ",") advance();
+        }
+
+        Token close = advance();
+        if (close.value != ")")
+            throw std::runtime_error("[RED FLAG] Expected ')' after " + kw + " arguments");
+
+        return new BuiltinNode(kw, args);
+    }
+
+    // === Assignments ===
     if (t.type == TokenType::Identifier) {
         Token varName = advance();
         Token op = advance();
@@ -103,7 +120,7 @@ Node* Parser::parseStatement() {
         }
     }
 
-    throw std::runtime_error("[RED FLAG] Unexpected token in statement: '" + t.value + "'");
+    return nullptr;
 }
 
 // -----------------

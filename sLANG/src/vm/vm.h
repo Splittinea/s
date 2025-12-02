@@ -14,11 +14,6 @@ public:
     VM(Memory& mem) : memory(mem) {}
 
     void execute(Node* node);
-    
-    // === IMPLEMENTED FUNCTIONS ===
-    void sPrint(PrintNode* node); // <= print(str)
-    // ==/////////////////////////==
-
     void run(const std::vector<Node*>& program);
 
 };
